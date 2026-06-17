@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f6f9fc;
+  --text: #2c3e50;
+  --text-h: #1a252f;
+  --border: #eef2f6;
+  --code-bg: #f8fafc;
+  
+  /* Premium digital blue colors (no dull slates or overly deep darks) */
+  --accent: #0066ff;
+  --accent-hover: #0052cc;
+  --accent-bg: #f0f7ff;
+  --accent-border: #cbe2ff;
+
+  --success: #00b074;
+  --success-bg: #ebfbf6;
+  --success-border: #bbf7e6;
+
+  --warning: #ffb000;
+  --warning-bg: #fffbeb;
+  --warning-border: #fef3c7;
+
+  --error: #ff3b30;
+  --error-bg: #fff5f5;
+  --error-border: #ffe3e3;
+
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --heading: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  font: 15px/1.6 var(--sans);
+  letter-spacing: -0.1px;
+  color: var(--text);
+  background: var(--bg);
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-subtle);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--heading);
+  color: var(--text-h);
+  font-weight: 600;
+  margin: 0;
+}
+
+h1 {
+  font-size: 32px;
+  letter-spacing: -0.8px;
+}
+
+h2 {
+  font-size: 22px;
+  letter-spacing: -0.5px;
+}
+
+h3 {
+  font-size: 16px;
+  letter-spacing: -0.3px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # ------------------------------------
+  # 1. Redis Caching Layer
+  # ------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: campusos-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # ------------------------------------
+  # 2. MongoDB (Configured for Transactions)
+  # ------------------------------------
+  mongodb:
+    image: mongo:7.0
+    container_name: campusos-mongodb
+    ports:
+      - "27017:27017"
+    # The critical flag to enable replica sets
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  # ------------------------------------
+  # 3. MongoDB Auto-Initializer
+  # ------------------------------------
+  mongo-setup:
+    image: mongo:7.0
+    container_name: campusos-mongo-setup
+    depends_on:
+      - mongodb
+    # This runs once, configures the replica set, and then exits cleanly
+    command: >
+      bash -c "
+        echo 'Waiting for MongoDB to start...';
+        sleep 3;
+        mongosh --host mongodb:27017 --eval '
+          try {
+            rs.status();
+            console.log(\"✅ Replica set is already active.\");
+          } catch (e) {
+            rs.initiate({
+              _id: \"rs0\",
+              members: [{ _id: 0, host: \"mongodb:27017\" }]
+            });
+            console.log(\"🚀 Replica set initialized successfully.\");
+          }
+        '
+      "
+
+volumes:
+  redis_data:
+  mongo_data:

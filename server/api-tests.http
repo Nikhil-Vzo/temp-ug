@@ -1,0 +1,135 @@
+# CampusOS API Endpoint Testing Suite
+# Use VS Code's "REST Client" extension to run these requests directly.
+# Make sure to start the server first (npm run dev) and run Docker container (npm run docker:up).
+
+@baseUrl = http://localhost:8000
+@contentType = application/json
+
+###
+# 1. Health Check
+GET {{baseUrl}}/health HTTP/1.1
+
+###
+# 1a. Register Admin with Organization
+# @name registerAdmin
+POST {{baseUrl}}/api/auth/register HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@campusos.com",
+  "password": "securepassword123",
+  "orgName": "CampusOS Lab"
+}
+
+###
+# 1b. Login Admin
+# @name loginAdmin
+POST {{baseUrl}}/api/auth/login HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@campusos.com",
+  "password": "securepassword123"
+}
+
+###
+# 1c. Get Current Auth Profile
+# Replace 'YOUR_JWT_TOKEN' below with the token returned in 1a or 1b.
+GET {{baseUrl}}/api/auth/me HTTP/1.1
+Authorization: Bearer YOUR_JWT_TOKEN
+
+###
+# 2. Create User 1 (Student)
+# Save the returned '_id' (e.g. 65c2a1...) and 'user_uuid' from response for subsequent requests.
+# @name createStudent
+POST {{baseUrl}}/api/users HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "email": "student@campusos.com"
+}
+
+###
+# 3. Create User 2 (Instructor/Admin)
+# Save the returned '_id' from this response.
+# @name createInstructor
+POST {{baseUrl}}/api/users HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "email": "instructor@campusos.com"
+}
+
+###
+# 4. Get User by Email
+GET {{baseUrl}}/api/users/email/student@campusos.com HTTP/1.1
+
+###
+# 5. Create Organization
+# Replace 'X-User-Id' with the student or instructor '_id' returned in step 2 or 3.
+# Save the returned 'organization_uuid' and '_id' from the response.
+POST {{baseUrl}}/api/organizations HTTP/1.1
+Content-Type: {{contentType}}
+X-User-Id: 65c2a1e8f3b2c1d0a5e6b7c9
+
+{
+  "name": "Acme Academy",
+  "slug": "acme-academy",
+  "explore": true,
+  "config": {
+    "theme": "dark",
+    "features": ["courses", "rewards"]
+  }
+}
+
+###
+# 6. Create Course
+# Replace 'X-User-Id' with the instructor's '_id'
+# Body: 'org_id' is the Organization's Mongo '_id' (not UUID).
+POST {{baseUrl}}/api/v1/courses HTTP/1.1
+Content-Type: {{contentType}}
+X-User-Id: 65c2a1e8f3b2c1d0a5e6b7c9
+
+{
+  "org_id": "65c2a1e8f3b2c1d0a5e6b7ca",
+  "title": "Introduction to TypeScript",
+  "description": "Learn the basics of TypeScript and build robust apps.",
+  "slug": "intro-to-typescript"
+}
+
+###
+# 7. Add Chapter to Course
+# Path param: Course UUID (e.g., e0a706da-...)
+# Replace 'X-User-Id' with the instructor's '_id'
+POST {{baseUrl}}/api/chapters/e0a706da-c07a-4c22-b5df-d43813bebfdb HTTP/1.1
+Content-Type: {{contentType}}
+X-User-Id: 65c2a1e8f3b2c1d0a5e6b7c9
+
+{
+  "title": "Chapter 1: Getting Started",
+  "description": "Environment setup and basic syntax."
+}
+
+###
+# 8. Enroll Student in Course
+# Body: 'courseId' is the Course's Mongo '_id' (not UUID).
+# Replace 'X-User-Id' with the student's '_id'
+POST {{baseUrl}}/api/v1/courses/enroll HTTP/1.1
+Content-Type: {{contentType}}
+X-User-Id: 65c2a1e8f3b2c1d0a5e6b7c9
+
+{
+  "courseId": "65c2a1e8f3b2c1d0a5e6b7cb"
+}
+
+###
+# 9. Get User Leaderboard / Rewards
+# Replace 'X-User-Id' with the student's '_id'
+GET {{baseUrl}}/api/v1/rewards/leaderboard HTTP/1.1
+X-User-Id: 65c2a1e8f3b2c1d0a5e6b7c9
+
+###
+# 10. Get User Notifications
+# Replace 'X-User-Id' with the student's '_id'
+GET {{baseUrl}}/api/v1/notifications HTTP/1.1
+X-User-Id: 65c2a1e8f3b2c1d0a5e6b7c9
