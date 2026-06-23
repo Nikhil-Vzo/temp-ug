@@ -157,3 +157,26 @@ export const get_quiz_result = async (userId: string, quizIdOrUuid: string) => {
     submittedAt: submission.submitted_at
   };
 };
+
+export const get_quiz_admin = async (quizIdOrUuid: string) => {
+  const quiz = await findQuiz(quizIdOrUuid);
+  return quiz;
+};
+
+export const get_quiz_by_lesson = async (lessonIdOrUuid: string) => {
+  const lesson = await findLesson(lessonIdOrUuid);
+  const quiz = await Quiz.findOne({ lesson_id: lesson._id }).lean();
+  return quiz;
+};
+
+export const update_quiz = async (
+  quizIdOrUuid: string,
+  updateData: { title?: string; passing_score?: number; questions?: any[] }
+) => {
+  const quiz = await findQuiz(quizIdOrUuid);
+  if (updateData.title !== undefined) quiz.title = updateData.title;
+  if (updateData.passing_score !== undefined) quiz.passing_score = updateData.passing_score;
+  if (updateData.questions !== undefined) quiz.questions = updateData.questions as any;
+  await quiz.save();
+  return quiz;
+};

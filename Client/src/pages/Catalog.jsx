@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { BookOpen, Check, Award, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function Catalog() {
   const { activeOrg, currentUser } = useOutletContext();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -105,9 +106,13 @@ export default function Catalog() {
 
                   <div className="catalog-card-footer">
                     {isEnrolled ? (
-                      <span className="enrollment-status success">
-                        <Check size={16} /> Enrolled
-                      </span>
+                      <button
+                        onClick={() => navigate(`/org/${activeOrg.slug}/courses/${course.course_uuid}/learn`)}
+                        className="btn btn-success btn-block"
+                      >
+                        Start Learning
+                        <ArrowRight size={16} style={{ marginLeft: '8px' }} />
+                      </button>
                     ) : (
                       <button
                         onClick={() => handleEnroll(course)}

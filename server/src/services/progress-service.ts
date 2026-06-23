@@ -142,3 +142,20 @@ const checkAndEmitCourseCompleted = async (userId: string, courseId: string) => 
     }
   }
 };
+
+export const get_user_course_progress_records = async (userId: string, courseIdOrUuid: string) => {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  const courseQuery = mongoose.Types.ObjectId.isValid(courseIdOrUuid)
+    ? { _id: courseIdOrUuid }
+    : { course_uuid: courseIdOrUuid };
+  const course = await Course.findOne(courseQuery).lean();
+  if (!course) throw new AppError('Course not found', 404);
+
+  const progressRecords = await Progress.find({
+    user_id: userObjectId,
+    course_id: course._id
+  }).lean();
+
+  return progressRecords;
+};

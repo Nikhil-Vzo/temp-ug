@@ -9,6 +9,7 @@ import { runInTransaction } from "../config/database.js";
 import { CacheService } from "../core/cache/cacheClient.js";
 import Chapter from "../models/Chapter.js";
 import Course from "../models/Course.js";
+import Module from "../models/Module.js";
 
 // explicit order defined in the Course's `chapters` array.
 export const DEPRECEATED_get_course_chapters = async (courseObjectId: string) => {
@@ -98,7 +99,10 @@ export const get_course_chapters = async (courseUuid: string) => {
       populate: {
         path: 'modules',
         populate: {
-          path: 'activities' // Deep population to fetch the entire curriculum tree
+          path: 'activities',
+          populate: {
+            path: 'assignment_config'
+          }
         }
       }
     })
@@ -116,7 +120,8 @@ export const get_course_chapters = async (courseUuid: string) => {
 export const reorder_chapters_and_activities = async (
   courseUuid: string, 
   newChapterOrder: string[], // Array of Chapter ObjectIds
-  chapterActivityUpdates: { chapterId: string; newActivities: string[] }[] // Array of Activity ObjectIds per Chapter
+  chapterActivityUpdates: { chapterId: string; newActivities: string[] }[], // Array of Module ObjectIds per Chapter
+  moduleActivityUpdates?: { moduleId: string; newLessons: string[] }[] // Array of Lesson ObjectIds per Module
 ) => {
   return await runInTransaction(async (session) => {
     const course = await Course.findOne({ course_uuid: courseUuid }).session(session).lean();
@@ -131,7 +136,7 @@ export const reorder_chapters_and_activities = async (
       );
     }
 
-    // 2. Bulk update all Chapters with their new Activity orders simultaneously
+    // 2. Bulk update all Chapters with their new Module orders simultaneously
     if (chapterActivityUpdates && chapterActivityUpdates.length > 0) {
       const bulkOps = chapterActivityUpdates.map(update => ({
         updateOne: {
@@ -141,6 +146,18 @@ export const reorder_chapters_and_activities = async (
       }));
 
       await Chapter.bulkWrite(bulkOps as any, { session });
+    }
+
+    // 3. Bulk update all Modules with their new Lesson/Activity orders simultaneously
+    if (moduleActivityUpdates && moduleActivityUpdates.length > 0) {
+      const moduleOps = moduleActivityUpdates.map(update => ({
+        updateOne: {
+          filter: { _id: update.moduleId },
+          update: { $set: { activities: update.newLessons } }
+        }
+      }));
+
+      await Module.bulkWrite(moduleOps as any, { session });
     }
 
     await CacheService.invalidateCourseMeta(courseUuid);

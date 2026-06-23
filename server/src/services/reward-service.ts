@@ -10,10 +10,21 @@ const COINS_FOR_COURSE = 50;
 const creditCoins = async (userId: string, amount: number, description: string, session?: any) => {
   let wallet = await Wallet.findOne({ user_id: userId }).session(session);
   if (!wallet) {
-    wallet = new Wallet({ user_id: userId, balance: 0, badges: [] });
+    try {
+      wallet = await Wallet.findOneAndUpdate(
+        { user_id: userId },
+        { $setOnInsert: { balance: 0, badges: [] } },
+        { upsert: true, new: true, setDefaultsOnInsert: true, session }
+      );
+    } catch (error) {
+      wallet = await Wallet.findOne({ user_id: userId }).session(session);
+      if (!wallet) throw error;
+    }
   }
-  wallet.balance += amount;
-  await wallet.save({ session });
+  if (wallet) {
+    wallet.balance += amount;
+    await wallet.save({ session });
+  }
   await RewardTransaction.create([{ user_id: userId, amount, description }], { session });
 };
 
@@ -31,11 +42,20 @@ export const handleCourseCompleted = async (data: { userId: string; courseId: st
 
     let wallet = await Wallet.findOne({ user_id: data.userId }).session(session);
     if (!wallet) {
-      wallet = new Wallet({ user_id: data.userId, balance: 0, badges: [] });
+      try {
+        wallet = await Wallet.findOneAndUpdate(
+          { user_id: data.userId },
+          { $setOnInsert: { balance: 0, badges: [] } },
+          { upsert: true, new: true, setDefaultsOnInsert: true, session }
+        );
+      } catch (error) {
+        wallet = await Wallet.findOne({ user_id: data.userId }).session(session);
+        if (!wallet) throw error;
+      }
     }
 
     const badgeName = `${data.courseTitle || 'Course'} Completionist`;
-    if (!wallet.badges.some((b: any) => b.badge_name === badgeName)) {
+    if (wallet && !wallet.badges.some((b: any) => b.badge_name === badgeName)) {
       wallet.badges.push({ badge_name: badgeName, earned_at: new Date() });
       await wallet.save({ session });
     }
@@ -45,8 +65,17 @@ export const handleCourseCompleted = async (data: { userId: string; courseId: st
 export const get_wallet = async (userId: string) => {
   let wallet = await Wallet.findOne({ user_id: userId }).lean();
   if (!wallet) {
-    const newWallet = await Wallet.create({ user_id: userId, balance: 0, badges: [] });
-    wallet = newWallet.toObject ? newWallet.toObject() : newWallet;
+    try {
+      const newWallet = await Wallet.findOneAndUpdate(
+        { user_id: userId },
+        { $setOnInsert: { balance: 0, badges: [] } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).lean();
+      wallet = newWallet;
+    } catch (error: any) {
+      wallet = await Wallet.findOne({ user_id: userId }).lean();
+      if (!wallet) throw error;
+    }
   }
   return wallet;
 };

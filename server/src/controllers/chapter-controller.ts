@@ -77,12 +77,13 @@ export const getCourseChapters = catchAsync(async (req: any, res: Response) => {
 // Expected Body: { newChapterOrder: string[], chapterActivityUpdates: { chapterId: string, newActivities: string[] }[] }
 export const reorderChaptersAndActivities = catchAsync(async (req: any, res: Response) => {
   const { courseUuid } = req.params;
-  const { newChapterOrder, chapterActivityUpdates } = req.body;
+  const { newChapterOrder, chapterActivityUpdates, moduleActivityUpdates } = req.body;
 
   await chapterService.reorder_chapters_and_activities(
     courseUuid, 
     newChapterOrder, 
-    chapterActivityUpdates
+    chapterActivityUpdates,
+    moduleActivityUpdates
   );
 
   res.status(200).json({

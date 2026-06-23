@@ -15,4 +15,7 @@ router.post('/lessons/:lessonId/complete', progressController.completeLesson);
 // GET /api/v1/courses/:courseId/progress
 router.get('/courses/:courseId/progress', progressController.getCourseProgress);
 
+// GET /api/v1/courses/:courseId/progress/records
+router.get('/courses/:courseId/progress/records', progressController.getUserCourseProgressRecords);
+
 export default router;

@@ -91,3 +91,46 @@ export const getQuizResult = catchAsync(async (req: any, res: Response) => {
     data: { result }
   });
 });
+
+// ==========================================
+// 7. Get Full Quiz (Instructor View)
+// ==========================================
+export const getQuizAdmin = catchAsync(async (req: any, res: Response) => {
+  const { quizId } = req.params;
+
+  const quiz = await quizService.get_quiz_admin(quizId);
+
+  res.status(200).json({
+    status: 'success',
+    data: { quiz }
+  });
+});
+
+// ==========================================
+// 8. Get Quiz by Lesson
+// ==========================================
+export const getQuizByLesson = catchAsync(async (req: any, res: Response) => {
+  const { lessonId } = req.params;
+
+  const quiz = await quizService.get_quiz_by_lesson(lessonId);
+
+  res.status(200).json({
+    status: 'success',
+    data: { quiz }
+  });
+});
+
+// ==========================================
+// 9. Update Quiz (Questions, Title, passingScore)
+// ==========================================
+export const updateQuiz = catchAsync(async (req: any, res: Response) => {
+  const { quizId } = req.params;
+  const { title, passingScore, questions } = req.body;
+
+  const quiz = await quizService.update_quiz(quizId, { title, passing_score: passingScore, questions });
+
+  res.status(200).json({
+    status: 'success',
+    data: { quiz }
+  });
+});

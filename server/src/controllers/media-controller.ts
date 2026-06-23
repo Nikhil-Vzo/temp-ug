@@ -32,6 +32,21 @@ export const attachVideo = catchAsync(async (req: any, res: Response) => {
 });
 
 // ==========================================
+// 2b. Attach PDF to Lesson
+// ==========================================
+export const attachPdf = catchAsync(async (req: any, res: Response) => {
+  const { lessonId } = req.params;
+  const { fileKey } = req.body;
+
+  const updatedLesson = await mediaService.attach_pdf(lessonId, fileKey);
+
+  res.status(200).json({
+    status: 'success',
+    data: { lesson: updatedLesson }
+  });
+});
+
+// ==========================================
 // 3. Get Streaming URL
 // ==========================================
 export const getStreamingUrl = catchAsync(async (req: any, res: Response) => {

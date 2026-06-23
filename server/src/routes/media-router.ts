@@ -9,6 +9,9 @@ router.post('/media/upload-url', mediaController.generateUploadUrl);
 // POST /api/v1/lessons/:lessonId/content
 router.post('/lessons/:lessonId/content', mediaController.attachVideo);
 
+// POST /api/v1/lessons/:lessonId/pdf
+router.post('/lessons/:lessonId/pdf', mediaController.attachPdf);
+
 // GET /api/v1/lessons/:lessonId/stream
 router.get('/lessons/:lessonId/stream', mediaController.getStreamingUrl);
 

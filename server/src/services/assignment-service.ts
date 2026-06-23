@@ -82,3 +82,31 @@ export const get_assignment_results = async (assignmentIdOrUuid: string) => {
     .sort({ submitted_at: -1 })
     .lean();
 };
+
+export const update_assignment = async (
+  assignmentIdOrUuid: string,
+  updateData: { title?: string; instructions?: string }
+) => {
+  const query = mongoose.Types.ObjectId.isValid(assignmentIdOrUuid)
+    ? { _id: assignmentIdOrUuid }
+    : { assignment_uuid: assignmentIdOrUuid };
+
+  const assignment = await Assignment.findOneAndUpdate(
+    query,
+    { $set: updateData },
+    { new: true }
+  ).lean();
+
+  if (!assignment) throw new AppError('Assignment not found', 404);
+  return assignment;
+};
+
+export const get_my_submission = async (userId: string, assignmentIdOrUuid: string) => {
+  const assignment = await findAssignment(assignmentIdOrUuid);
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  return await Submission.findOne({
+    assignment_id: assignment._id,
+    user_id: userObjectId
+  }).lean();
+};

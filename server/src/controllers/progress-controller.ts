@@ -67,3 +67,18 @@ export const getCourseProgress = catchAsync(async (req: any, res: Response) => {
     data: progress
   });
 });
+
+// ==========================================
+// 5. Get User Course Progress Records List
+// ==========================================
+export const getUserCourseProgressRecords = catchAsync(async (req: any, res: Response) => {
+  const { courseId } = req.params;
+  const userId = req.user?.id || req.query.userId || "6a2fde02acf82e9382a4ad9b";
+
+  const records = await progressService.get_user_course_progress_records(userId as string, courseId);
+
+  res.status(200).json({
+    status: 'success',
+    data: { records }
+  });
+});

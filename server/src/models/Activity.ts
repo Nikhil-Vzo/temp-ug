@@ -14,7 +14,7 @@ const ActivitySchema = new Schema({
   // Functional Dependency: Blocks embedded for atomic UI reads
   blocks: [{
     block_uuid: { type: Schema.Types.UUID, default: uuidv4 },
-    block_type: { type: String, enum: ['text', 'code', 'video', 'image'], required: true },
+    block_type: { type: String, enum: ['text', 'code', 'video', 'image', 'pdf'], required: true },
     content: { type: Schema.Types.Mixed }, // Maps to PostgreSQL JSONB
     order: { type: Number, required: true }
   }],

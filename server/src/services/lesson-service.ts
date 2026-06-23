@@ -41,7 +41,7 @@ export const get_lesson = async (lessonIdOrUuid: string) => {
     ? { _id: lessonIdOrUuid }
     : { activity_uuid: lessonIdOrUuid };
 
-  const lesson = await Activity.findOne(query).lean();
+  const lesson = await Activity.findOne(query).populate('assignment_config').lean();
   if (!lesson) throw new AppError('Lesson not found', 404);
   return lesson;
 };

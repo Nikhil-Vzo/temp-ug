@@ -15,4 +15,10 @@ router.post('/submissions/:submissionId/grade', assignmentController.gradeSubmis
 // GET /api/v1/assignments/:assignmentId/results
 router.get('/assignments/:assignmentId/results', assignmentController.getAssignmentResults);
 
+// PATCH /api/v1/assignments/:assignmentId
+router.patch('/assignments/:assignmentId', assignmentController.updateAssignment);
+
+// GET /api/v1/assignments/:assignmentId/my-submission
+router.get('/assignments/:assignmentId/my-submission', assignmentController.getMySubmission);
+
 export default router;

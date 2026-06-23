@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { BookOpen, Plus, Trash2, Edit3, Copy, Eye, EyeOff, X, Check } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function Courses() {
   const { activeOrg } = useOutletContext();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -254,7 +255,7 @@ export default function Courses() {
                 </tr>
               ) : (
                 courses.map((course) => (
-                  <tr key={course._id}>
+                  <tr key={course.course_uuid || course._id}>
                     <td>
                       <div className="course-cell-title">
                         <strong>{course.title}</strong>
@@ -274,9 +275,9 @@ export default function Courses() {
                     </td>
                     <td>
                       <div className="authors-list">
-                        {course.authors?.map((a) => (
-                          <span key={a.user_id?._id} className="author-tag" title={a.user_id?.email}>
-                            {a.user_id?.email?.split('@')[0]} ({a.role})
+                        {course.authors?.map((a, idx) => (
+                          <span key={a.user_id?._id || a.user_id || idx} className="author-tag" title={a.user_id?.email}>
+                            {a.user_id?.email ? a.user_id.email.split('@')[0] : (typeof a.user_id === 'string' ? a.user_id.substring(0, 8) : 'contributor')} ({a.role})
                           </span>
                         ))}
                       </div>
@@ -289,6 +290,14 @@ export default function Courses() {
                           title={course.published ? 'Archive Course' : 'Publish Course'}
                         >
                           {course.published ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                        <button
+                          onClick={() => navigate(`/org/${activeOrg.slug}/courses/${course.course_uuid}/curriculum`)}
+                          className="btn-action"
+                          title="Edit Curriculum / Syllabus"
+                          style={{ color: 'var(--primary)' }}
+                        >
+                          <BookOpen size={16} />
                         </button>
                         <button
                           onClick={() => handleEditClick(course)}

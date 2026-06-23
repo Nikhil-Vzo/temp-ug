@@ -62,3 +62,33 @@ export const getAssignmentResults = catchAsync(async (req: any, res: Response) =
     data: { results }
   });
 });
+
+// ==========================================
+// 5. Update Assignment Config
+// ==========================================
+export const updateAssignment = catchAsync(async (req: any, res: Response) => {
+  const { assignmentId } = req.params;
+  const { title, instructions } = req.body;
+
+  const assignment = await assignmentService.update_assignment(assignmentId, { title, instructions });
+
+  res.status(200).json({
+    status: 'success',
+    data: { assignment }
+  });
+});
+
+// ==========================================
+// 6. Get Student's Own Submission
+// ==========================================
+export const getMySubmission = catchAsync(async (req: any, res: Response) => {
+  const { assignmentId } = req.params;
+  const userId = req.user?.id || req.body.userId || "6a2fde02acf82e9382a4ad9b";
+
+  const submission = await assignmentService.get_my_submission(userId, assignmentId);
+
+  res.status(200).json({
+    status: 'success',
+    data: { submission }
+  });
+});

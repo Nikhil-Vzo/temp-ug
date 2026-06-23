@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
-import { BookOpen, Users, LayoutDashboard, RefreshCw, LogOut, GraduationCap, ChevronRight, User } from 'lucide-react';
+import { Outlet, useNavigate, useParams, Link, useLocation, Navigate } from 'react-router-dom';
+import { BookOpen, Users, LayoutDashboard, RefreshCw, LogOut, GraduationCap, ChevronRight, User, Award } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function WorkspaceLayout() {
@@ -73,6 +73,19 @@ export default function WorkspaceLayout() {
   const isStaff = ['admin', 'maintainer', 'instructor'].includes(role);
   const isAdminOrMaintainer = ['admin', 'maintainer'].includes(role);
 
+  // Client-side Role-Based Route Guarding
+  const path = location.pathname.toLowerCase();
+  const isManageCoursesRoute = path.includes('/courses') || path.includes('/curriculum');
+  const isUserManagementRoute = path.includes('/users');
+
+  if (isManageCoursesRoute && !isStaff) {
+    return <Navigate to={`/org/${slug}/dashboard`} replace />;
+  }
+
+  if (isUserManagementRoute && !isAdminOrMaintainer) {
+    return <Navigate to={`/org/${slug}/dashboard`} replace />;
+  }
+
   return (
     <div className="workspace-container">
       {/* Sidebar */}
@@ -133,6 +146,14 @@ export default function WorkspaceLayout() {
               <span>User Management</span>
             </Link>
           )}
+
+          <Link
+            to={`/org/${slug}/rewards`}
+            className={`nav-item ${location.pathname.includes('/rewards') ? 'active' : ''}`}
+          >
+            <Award size={18} />
+            <span>Rewards & Leaderboard</span>
+          </Link>
         </nav>
 
         <div className="sidebar-footer">
