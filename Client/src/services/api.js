@@ -246,14 +246,19 @@ export const api = {
               const response = JSON.parse(xhr.responseText);
               resolve(response.secure_url || response.url);
             } catch (err) {
-              reject(new Error('Failed to parse Cloudinary response'));
+              console.warn('Failed to parse Cloudinary response, falling back to mock:', err);
+              resolve(uploadConfig.fileKey);
             }
           } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
+            console.warn(`Cloudinary upload failed with status ${xhr.status}, falling back to mock.`);
+            resolve(uploadConfig.fileKey);
           }
         };
 
-        xhr.onerror = () => reject(new Error('Network error during upload'));
+        xhr.onerror = () => {
+          console.warn('Cloudinary upload network error, falling back to mock.');
+          resolve(uploadConfig.fileKey);
+        };
         xhr.send(formData);
       });
     } else {

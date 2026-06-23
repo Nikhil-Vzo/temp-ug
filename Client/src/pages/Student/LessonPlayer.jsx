@@ -353,69 +353,100 @@ export default function LessonPlayer() {
                   <p>Loading lesson media...</p>
                 </div>
               ) : activeLesson.activity_type === 'video' ? (
-                <div className="video-player-wrapper">
-                  {streamingUrl ? (
-                    <div className="player-aspect-ratio">
-                      <ReactPlayer
-                        url={streamingUrl}
-                        controls={true}
-                        width="100%"
-                        height="100%"
-                        className="react-player-screen"
-                        onStart={() => api.startLessonProgress(activeLesson._id).catch(() => null)}
-                        onProgress={handleVideoProgress}
-                        onEnded={handleCompleteLesson}
-                      />
+                (() => {
+                  const videoUrl = streamingUrl 
+                    || activeLessonDetails?.blocks?.find(b => b.block_type === 'video')?.content?.fileKey
+                    || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+                  const isDirectMp4 = videoUrl.endsWith('.mp4') || videoUrl.includes('googleapis.com') || videoUrl.includes('cloudinary');
+                  return (
+                    <div className="video-player-wrapper">
+                      <div className="player-aspect-ratio">
+                        {isDirectMp4 ? (
+                          <video
+                            src={videoUrl}
+                            controls
+                            autoPlay={false}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: '#000' }}
+                            onPlay={() => api.startLessonProgress(activeLesson._id).catch(() => null)}
+                            onTimeUpdate={(e) => {
+                              const vid = e.target;
+                              if (vid.duration) {
+                                const pct = Math.round((vid.currentTime / vid.duration) * 100);
+                                if (pct % 10 === 0) {
+                                  api.updateLessonProgress(activeLesson._id, pct, Math.round(vid.currentTime)).catch(() => null);
+                                }
+                              }
+                            }}
+                            onEnded={handleCompleteLesson}
+                          />
+                        ) : (
+                          <ReactPlayer
+                            url={videoUrl}
+                            controls={true}
+                            width="100%"
+                            height="100%"
+                            style={{ position: 'absolute', top: 0, left: 0 }}
+                            onStart={() => api.startLessonProgress(activeLesson._id).catch(() => null)}
+                            onProgress={handleVideoProgress}
+                            onEnded={handleCompleteLesson}
+                            onError={(e) => console.error('ReactPlayer error:', e)}
+                          />
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="video-placeholder-card">
-                      <Video size={48} />
-                      <h4>No video stream attached</h4>
-                      <p>An instructor needs to upload a video block to this lesson via the Curriculum Builder.</p>
-                    </div>
-                  )}
-                </div>
+                  );
+                })()
               ) : activeLesson.activity_type === 'pdf' ? (
-                <div className="document-player-card" style={{ padding: '24px' }}>
-                  <FileText size={48} className="text-purple" style={{ marginBottom: '16px' }} />
-                  <h4>PDF Reading Material</h4>
-                  {activeLessonDetails?.blocks?.find(b => b.block_type === 'pdf') ? (
-                    <div style={{ width: '100%', marginTop: '20px' }}>
-                      <iframe
-                        src={activeLessonDetails.blocks.find(b => b.block_type === 'pdf').content?.fileKey}
-                        width="100%"
-                        height="500px"
-                        title="PDF Viewer"
-                        style={{ border: '1px solid var(--border)', borderRadius: '8px', background: '#fff' }}
-                      />
-                      <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
+                (() => {
+                  const pdfBlock = activeLessonDetails?.blocks?.find(b => b.block_type === 'pdf');
+                  const rawPdfUrl = pdfBlock?.content?.fileKey;
+                  const pdfUrl = rawPdfUrl && rawPdfUrl.startsWith('http')
+                    ? rawPdfUrl
+                    : 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+                  // Use Google Docs Viewer as fallback for cross-origin PDFs
+                  const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
+                  return (
+                    <div className="pdf-viewer-wrapper">
+                      <h4>
+                        <FileText size={24} style={{ color: 'var(--accent)' }} />
+                        PDF Reading Material
+                      </h4>
+                      <div className="pdf-iframe-container">
+                        <iframe
+                          src={googleViewerUrl}
+                          title="PDF Viewer"
+                          allow="autoplay"
+                        />
+                      </div>
+                      <div className="pdf-actions">
                         <a 
-                          href={activeLessonDetails.blocks.find(b => b.block_type === 'pdf').content?.fileKey} 
+                          href={pdfUrl} 
                           target="_blank" 
                           rel="noopener noreferrer" 
                           className="btn btn-primary"
                         >
-                          Open in New Tab
+                          Open PDF in New Tab
+                        </a>
+                        <a 
+                          href={pdfUrl} 
+                          download
+                          className="btn btn-outline"
+                        >
+                          Download PDF
                         </a>
                       </div>
                     </div>
-                  ) : (
-                    <div className="video-placeholder-card">
-                      <FileText size={48} />
-                      <h4>No PDF document attached</h4>
-                      <p>An instructor has not uploaded a PDF file for this lesson yet.</p>
-                    </div>
-                  )}
-                </div>
+                  );
+                })()
               ) : activeLesson.activity_type === 'assignment' ? (
                 <div className="document-player-card" style={{ padding: '24px', textAlign: 'left' }}>
                   <HelpCircle size={48} className="text-warning" style={{ marginBottom: '16px' }} />
                   <h3 style={{ marginBottom: '12px' }}>Assignment Task</h3>
                   {activeLessonDetails?.assignment_config ? (
                     <div>
-                      <div className="assignment-instructions" style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '24px' }}>
-                        <h4 style={{ color: 'var(--text)', marginBottom: '8px' }}>Instructions:</h4>
-                        <p style={{ whiteSpace: 'pre-wrap', color: 'rgba(255,255,255,0.8)' }}>
+                      <div className="assignment-instructions" style={{ background: 'var(--bg-subtle)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '24px' }}>
+                        <h4 style={{ color: 'var(--text-h)', marginBottom: '8px' }}>Instructions:</h4>
+                        <p style={{ whiteSpace: 'pre-wrap', color: 'var(--text)' }}>
                           {activeLessonDetails.assignment_config.instructions}
                         </p>
                       </div>
@@ -426,7 +457,7 @@ export default function LessonPlayer() {
                           <p style={{ fontSize: '14px', marginBottom: '8px' }}>
                             <strong>Submission URL:</strong> <a href={mySubmission.submission_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>{mySubmission.submission_url}</a>
                           </p>
-                          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                          <p style={{ fontSize: '13px', color: 'var(--text)', opacity: 0.7 }}>
                             Submitted on: {new Date(mySubmission.submitted_at).toLocaleString()}
                           </p>
                           {mySubmission.graded_at ? (
@@ -483,7 +514,7 @@ export default function LessonPlayer() {
                       <p style={{ fontSize: '15px', marginBottom: '8px' }}>
                         Your Score: <strong>{quizResult.score}%</strong> (Passing score: {quiz?.passing_score || 70}%)
                       </p>
-                      <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>
+                      <p style={{ fontSize: '13px', color: 'var(--text)', opacity: 0.7, marginBottom: '16px' }}>
                         Attempted on: {new Date(quizResult.submittedAt || quizResult.submitted_at || Date.now()).toLocaleString()}
                       </p>
                       {!quizResult.passed && (

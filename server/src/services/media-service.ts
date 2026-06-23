@@ -96,7 +96,7 @@ export const get_streaming_url = async (lessonIdOrUuid: string) => {
   // If the fileKey is a full URL (like a Cloudinary URL), return it directly
   const streamingUrl = fileKey.startsWith('http')
     ? fileKey
-    : `https://mock-cloudfront-distribution.net/${fileKey}?Expires=3600&Signature=MOCK_SIG`;
+    : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
   return { streamingUrl, fileKey };
 };

@@ -75,7 +75,7 @@ export default function WorkspaceLayout() {
 
   // Client-side Role-Based Route Guarding
   const path = location.pathname.toLowerCase();
-  const isManageCoursesRoute = path.includes('/courses') || path.includes('/curriculum');
+  const isManageCoursesRoute = (path.includes('/courses') || path.includes('/curriculum')) && !path.includes('/learn');
   const isUserManagementRoute = path.includes('/users');
 
   if (isManageCoursesRoute && !isStaff) {
