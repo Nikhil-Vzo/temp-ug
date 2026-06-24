@@ -1,7 +1,10 @@
 # Dependencies
 node_modules/
 
-
+.env
+env
+/.env
+/.env
 # Build and distribution directories
 dist/
 build/

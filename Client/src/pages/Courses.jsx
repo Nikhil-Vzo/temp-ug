@@ -276,8 +276,10 @@ export default function Courses() {
                     <td>
                       <div className="authors-list">
                         {course.authors?.map((a, idx) => (
-                          <span key={a.user_id?._id || a.user_id || idx} className="author-tag" title={a.user_id?.email}>
-                            {a.user_id?.email ? a.user_id.email.split('@')[0] : (typeof a.user_id === 'string' ? a.user_id.substring(0, 8) : 'contributor')} ({a.role})
+                          <span key={a.user_id?._id || a.user_id || idx} className="author-tag" title={a.user_id?.email || 'Instructor'}>
+                            {a.user_id?.email 
+                              ? `${a.user_id.email.split('@')[0]} (${a.role})` 
+                              : (a.role ? a.role.charAt(0).toUpperCase() + a.role.slice(1) : 'Instructor')}
                           </span>
                         ))}
                       </div>

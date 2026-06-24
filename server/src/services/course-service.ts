@@ -67,7 +67,12 @@ export const get_courses = async (
     query.difficulty = filters.difficulty.toLowerCase();
   }
 
-  return await Course.find(query).sort({ created_at: -1 }).skip(skip).limit(limit).lean();
+  return await Course.find(query)
+    .populate('authors.user_id', 'email')
+    .sort({ created_at: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
 };
 
 export const get_courses_orgslug = async (orgSlug: string, skip: number = 0, limit: number = 20) => {
@@ -75,6 +80,7 @@ export const get_courses_orgslug = async (orgSlug: string, skip: number = 0, lim
   if (!org) throw new AppError('Organization not found', 404);
 
   return await Course.find({ org_id: org._id })
+    .populate('authors.user_id', 'email')
     .sort({ created_at: -1 })
     .skip(skip)
     .limit(limit)

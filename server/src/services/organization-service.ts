@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { AppError } from "../config/CatchAsync.js";
 import { runInTransaction } from "../config/database.js";
 import { CacheService } from "../core/cache/cacheClient.js";
@@ -7,6 +8,17 @@ import Organization from "../models/Organization.js";
 import OrgConfig from "../models/orgConfig-model.js";
 import Role from "../models/Roles.js";
 import User from "../models/User.js";
+
+// Helper: resolve an org by UUID (v4) OR MongoDB ObjectId string
+const findOrgByIdOrUuid = async (idOrUuid: string, session?: any) => {
+  const isObjectId = mongoose.Types.ObjectId.isValid(idOrUuid) && idOrUuid.length === 24;
+  const query = isObjectId
+    ? Organization.findById(idOrUuid)
+    : Organization.findOne({ organization_uuid: idOrUuid });
+  const org = await (session ? query.session(session) : query).lean();
+  if (!org) throw new AppError('Organization not found', 404);
+  return org;
+};
 
 
 interface CreateOrgInput {
@@ -67,13 +79,49 @@ export const create_org_with_config = async (
   userObjectId: string
 ) => {
   return await runInTransaction(async (session) => {
-    const [newOrg] = await (Organization.create as any)([orgData], { session });
+    // --- Pre-flight checks ---
     const adminRoleId = await getAdminRoleId(session);
+
+    // Fetch the requesting user WITH their memberships populated so we can inspect their roles
+    const user = await User.findById(userObjectId)
+      .populate({ path: 'memberships.role_id', select: 'name' })
+      .session(session)
+      .lean();
+
+    if (!user) throw new AppError('User not found', 404);
+
+    // Rule 1 & 2: Platform/app admins bypass these checks
+    const isPlatformAdmin = user.email && (
+      user.email.toLowerCase() === 'admin@gmail.com' ||
+      user.email.toLowerCase().startsWith('admin@') ||
+      user.email.toLowerCase().includes('admin')
+    );
+
+    if (!isPlatformAdmin) {
+      // Rule 1: One org per user — if they are already an admin of any org, block creation
+      const alreadyOwnsOrg = user.memberships.some(
+        (m: any) => m.role_id?.name === 'admin'
+      );
+      if (alreadyOwnsOrg) {
+        throw new AppError('You already own an organization. Each account is limited to one organization.', 403);
+      }
+
+      // Rule 2: Students cannot create orgs — if they have any existing membership (even student),
+      // but no admin membership, they were added to someone else's org as a student.
+      // Only users with zero memberships (brand new) can create a new org.
+      const hasAnyMembership = user.memberships.length > 0;
+      if (hasAnyMembership) {
+        throw new AppError('Students cannot create organizations. Contact your organization administrator.', 403);
+      }
+    }
+    // -------------------------
+
+    const [newOrg] = await (Organization.create as any)([orgData], { session });
 
     // Create associated config
     await OrgConfig.create([{ org_id: newOrg._id, ...configData }], { session });
 
-    // Update User memberships
+    // Update User memberships — grant admin role to the creator
     await User.findByIdAndUpdate(
       userObjectId,
       {
@@ -158,6 +206,16 @@ export const get_orgs_by_user = async (userObjectId: string) => {
 
   if (!user) throw new AppError('User not found', 404);
 
+  const isPlatformAdmin = user.email && (
+    user.email.toLowerCase() === 'admin@gmail.com' ||
+    user.email.toLowerCase().startsWith('admin@') ||
+    user.email.toLowerCase().includes('admin')
+  );
+
+  if (isPlatformAdmin) {
+    return await Organization.find({}).lean();
+  }
+
   // Map over the memberships to extract just the populated Organization objects
   return user.memberships.map((m: any) => m.org_id).filter(Boolean);
 };
@@ -166,13 +224,23 @@ export const get_orgs_by_user = async (userObjectId: string) => {
 // 7. Get Organizations by User Admin
 // ==========================================
 export const get_orgs_by_user_admin = async (userObjectId: string) => {
-  const adminRoleId = await getAdminRoleId();
-
   const user = await User.findById(userObjectId)
     .populate('memberships.org_id')
     .lean();
 
   if (!user) throw new AppError('User not found', 404);
+
+  const isPlatformAdmin = user.email && (
+    user.email.toLowerCase() === 'admin@gmail.com' ||
+    user.email.toLowerCase().startsWith('admin@') ||
+    user.email.toLowerCase().includes('admin')
+  );
+
+  if (isPlatformAdmin) {
+    return await Organization.find({}).lean();
+  }
+
+  const adminRoleId = await getAdminRoleId();
 
   // Filter memberships where the role is admin, then extract the org object
   return user.memberships
@@ -206,8 +274,8 @@ export const update_org = async (orgUuid: string, updateData: UpdateOrgInput) =>
 // 9. Get Organization Members
 // ==========================================
 export const get_org_members = async (orgUuid: string) => {
-  const org = await Organization.findOne({ organization_uuid: orgUuid }).lean();
-  if (!org) throw new AppError('Organization not found', 404);
+  // Accept either a UUID (v4) or a MongoDB ObjectId — the frontend may send either
+  const org = await findOrgByIdOrUuid(orgUuid);
 
   const members = await User.find({ 'memberships.org_id': org._id })
     .populate({
@@ -234,8 +302,7 @@ export const get_org_members = async (orgUuid: string) => {
 // 10. Update Member Role
 // ==========================================
 export const update_member_role = async (orgUuid: string, memberUserObjectId: string, newRoleName: string) => {
-  const org = await Organization.findOne({ organization_uuid: orgUuid }).lean();
-  if (!org) throw new AppError('Organization not found', 404);
+  const org = await findOrgByIdOrUuid(orgUuid);
 
   const role = await Role.findOne({ name: newRoleName as any }).lean();
   if (!role) throw new AppError(`Role ${newRoleName} not found`, 404);
@@ -254,8 +321,7 @@ export const update_member_role = async (orgUuid: string, memberUserObjectId: st
 // 11. Remove Member from Organization
 // ==========================================
 export const remove_member = async (orgUuid: string, memberUserObjectId: string) => {
-  const org = await Organization.findOne({ organization_uuid: orgUuid }).lean();
-  if (!org) throw new AppError('Organization not found', 404);
+  const org = await findOrgByIdOrUuid(orgUuid);
 
   const updatedUser = await User.findOneAndUpdate(
     { _id: memberUserObjectId },
